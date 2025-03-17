@@ -17,30 +17,83 @@ import {
   ThreadWithAuthor,
   CommentWithAuthor
 } from "@/utils/mockUtils";
-import { getThreadById } from "@/data/forumData";
+import { Toast } from "@/components/ui/toast";
+import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 const Index = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeThread, setActiveThread] = useState<string | null>(null);
+  const [showNewPostDialog, setShowNewPostDialog] = useState(false);
+  const { toast } = useToast();
   
-  // Récupérer les données simulées
+  // Get mock data
   const recentThreads = getRecentThreads();
   const trendingThreads = getTrendingThreadsWithInfo();
   const popularThreads = getPopularThreadsWithInfo();
   const followingThreads = getCurrentUserThreads();
   
-  // Récupérer les commentaires du thread actif
-  const activeThreadComments: CommentWithAuthor[] = activeThread 
-    ? getCommentsWithReplies(activeThread)
-    : [];
+  // Get comments for active thread
+  const [activeThreadComments, setActiveThreadComments] = useState<CommentWithAuthor[]>([]);
+  const [activeThreadDetails, setActiveThreadDetails] = useState<ThreadWithAuthor | null>(null);
   
-  // Récupérer les détails du thread actif
-  const activeThreadDetails = activeThread 
-    ? recentThreads.find(thread => thread.id === activeThread) 
-    : null;
+  // Load thread details when active thread changes
+  const loadThreadDetails = (threadId: string) => {
+    setActiveThread(threadId);
+    
+    // Get thread details
+    const threadDetails = recentThreads.find(thread => thread.id === threadId) || 
+                         trendingThreads.find(thread => thread.id === threadId) ||
+                         popularThreads.find(thread => thread.id === threadId) ||
+                         followingThreads.find(thread => thread.id === threadId);
+    
+    setActiveThreadDetails(threadDetails || null);
+    
+    // Get comments
+    const comments = getCommentsWithReplies(threadId);
+    setActiveThreadComments(comments);
+  }
   
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
+  };
+  
+  const handleNewComment = (content: string) => {
+    toast({
+      title: "Commentaire ajouté",
+      description: "Votre commentaire a été ajouté avec succès."
+    });
+    
+    // In a real app, we would add the comment to the database
+    console.log("Nouveau commentaire:", content);
+  };
+  
+  const handleNewReply = (parentId: string | undefined, content: string) => {
+    toast({
+      title: "Réponse ajoutée",
+      description: "Votre réponse a été ajoutée avec succès."
+    });
+    
+    console.log("Nouvelle réponse:", { parentId, content });
+  };
+  
+  const handleNewThread = (content: string, title?: string) => {
+    toast({
+      title: "Sujet créé",
+      description: "Votre nouveau sujet a été créé avec succès."
+    });
+    
+    console.log("Nouveau sujet:", { title, content });
+    setShowNewPostDialog(false);
+  };
+  
+  const handleVote = (commentId: string | undefined, direction: "up" | "down") => {
+    toast({
+      title: `Vote ${direction === "up" ? "positif" : "négatif"}`,
+      description: `Votre vote a été pris en compte.`
+    });
+    
+    console.log("Vote:", { commentId, direction });
   };
   
   return (
@@ -56,7 +109,10 @@ const Index = () => {
               <>
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold">Discussions</h2>
-                  <Button className="bg-forum-purple hover:bg-forum-purple-dark forum-button">
+                  <Button 
+                    className="bg-forum-purple hover:bg-forum-purple-dark forum-button"
+                    onClick={() => setShowNewPostDialog(true)}
+                  >
                     Nouveau Sujet
                   </Button>
                 </div>
@@ -87,7 +143,7 @@ const Index = () => {
                         <ThreadCard
                           key={thread.id}
                           {...thread}
-                          onClick={() => setActiveThread(thread.id)}
+                          onClick={() => loadThreadDetails(thread.id)}
                         />
                       ))}
                     </div>
@@ -99,7 +155,7 @@ const Index = () => {
                         <ThreadCard
                           key={thread.id}
                           {...thread}
-                          onClick={() => setActiveThread(thread.id)}
+                          onClick={() => loadThreadDetails(thread.id)}
                         />
                       ))}
                     </div>
@@ -111,7 +167,7 @@ const Index = () => {
                         <ThreadCard
                           key={thread.id}
                           {...thread}
-                          onClick={() => setActiveThread(thread.id)}
+                          onClick={() => loadThreadDetails(thread.id)}
                         />
                       ))}
                     </div>
@@ -123,7 +179,7 @@ const Index = () => {
                         <ThreadCard
                           key={thread.id}
                           {...thread}
-                          onClick={() => setActiveThread(thread.id)}
+                          onClick={() => loadThreadDetails(thread.id)}
                         />
                       ))}
                     </div>
@@ -156,11 +212,17 @@ const Index = () => {
                     placeholder="Ajouter un commentaire..." 
                     buttonText="Commenter"
                     isComment
+                    onSubmit={handleNewComment}
                   />
                   
                   <div className="space-y-4">
                     {activeThreadComments.map((comment) => (
-                      <CommentThread key={comment.id} {...comment} />
+                      <CommentThread 
+                        key={comment.id} 
+                        {...comment} 
+                        onReply={handleNewReply}
+                        onVote={handleVote}
+                      />
                     ))}
                   </div>
                 </div>
@@ -169,6 +231,17 @@ const Index = () => {
           </div>
         </main>
       </div>
+      
+      <Dialog open={showNewPostDialog} onOpenChange={setShowNewPostDialog}>
+        <DialogContent className="sm:max-w-[650px]">
+          <h2 className="text-xl font-bold mb-4">Nouveau Sujet</h2>
+          <CreatePost 
+            placeholder="De quoi voulez-vous discuter ?" 
+            buttonText="Publier le sujet"
+            onSubmit={handleNewThread}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -5,9 +5,10 @@ import { Textarea } from "@/components/ui/textarea";
 import UserAvatar from "./UserAvatar";
 import { ImageIcon, Link2, Smile, PlusCircle } from "lucide-react";
 import { useState } from "react";
+import { Input } from "@/components/ui/input";
 
 interface CreatePostProps {
-  onSubmit?: (content: string) => void;
+  onSubmit?: (content: string, title?: string) => void;
   placeholder?: string;
   buttonText?: string;
   isComment?: boolean;
@@ -20,16 +21,28 @@ const CreatePost = ({
   isComment = false
 }: CreatePostProps) => {
   const [content, setContent] = useState("");
+  const [title, setTitle] = useState("");
   
   const handleSubmit = () => {
     if (content.trim() && onSubmit) {
-      onSubmit(content);
+      onSubmit(content, isComment ? undefined : title);
       setContent("");
+      if (!isComment) setTitle("");
     }
   };
   
   return (
     <Card className="mb-6 border-forum-purple/20 animate-scale-in">
+      {!isComment && (
+        <CardContent className="px-4 pt-4 pb-0">
+          <Input
+            placeholder="Titre de la discussion"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="font-medium focus-visible:ring-forum-purple"
+          />
+        </CardContent>
+      )}
       <CardContent className="p-4">
         <div className="flex gap-3">
           <UserAvatar 
@@ -65,7 +78,7 @@ const CreatePost = ({
         </div>
         <Button 
           onClick={handleSubmit}
-          disabled={!content.trim()}
+          disabled={!content.trim() || (!isComment && !title.trim())}
           className="bg-forum-purple hover:bg-forum-purple-dark forum-button"
         >
           {buttonText}

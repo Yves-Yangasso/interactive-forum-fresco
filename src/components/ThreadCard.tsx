@@ -2,11 +2,14 @@
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, ArrowUp, ArrowDown, Eye } from "lucide-react";
+import { MessageSquare, ArrowUp, ArrowDown, Eye, Bookmark, Share2 } from "lucide-react";
 import UserAvatar from "./UserAvatar";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface ThreadCardProps {
+  id: string;
   title: string;
   excerpt: string;
   author: {
@@ -23,6 +26,7 @@ interface ThreadCardProps {
 }
 
 const ThreadCard = ({
+  id,
   title,
   excerpt,
   author,
@@ -34,6 +38,51 @@ const ThreadCard = ({
   isHot,
   onClick
 }: ThreadCardProps) => {
+  const [currentVotes, setCurrentVotes] = useState(votes);
+  const [userVote, setUserVote] = useState<"up" | "down" | null>(null);
+  const [bookmarked, setBookmarked] = useState(false);
+  const { toast } = useToast();
+
+  const handleVote = (direction: "up" | "down", e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering the card click
+    
+    // If user already voted same direction, remove vote
+    if (userVote === direction) {
+      setUserVote(null);
+      setCurrentVotes(direction === "up" ? currentVotes - 1 : currentVotes + 1);
+    } 
+    // If user voted opposite direction, change vote
+    else if (userVote) {
+      setUserVote(direction);
+      setCurrentVotes(direction === "up" ? currentVotes + 2 : currentVotes - 2);
+    } 
+    // If user hadn't voted before
+    else {
+      setUserVote(direction);
+      setCurrentVotes(direction === "up" ? currentVotes + 1 : currentVotes - 1);
+    }
+  };
+
+  const handleBookmark = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering the card click
+    setBookmarked(!bookmarked);
+    
+    toast({
+      title: bookmarked ? "Favori supprimé" : "Ajouté aux favoris",
+      description: bookmarked ? "Ce sujet a été retiré de vos favoris" : "Ce sujet a été ajouté à vos favoris"
+    });
+  };
+
+  const handleShare = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering the card click
+    
+    // In a real app, this would use the Web Share API or copy to clipboard
+    toast({
+      title: "Lien copié",
+      description: "Le lien a été copié dans le presse-papier"
+    });
+  };
+
   return (
     <Card 
       className={cn(
@@ -44,13 +93,32 @@ const ThreadCard = ({
     >
       <CardContent className="p-0 flex">
         <div className="flex flex-col items-center justify-start bg-muted/30 px-4 py-6 text-center">
-          <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className={cn(
+              "h-8 w-8",
+              userVote === "up" && "text-green-600"
+            )}
+            onClick={(e) => handleVote("up", e)}
+          >
             <ArrowUp className="h-5 w-5" />
           </Button>
-          <span className={cn("font-medium text-sm py-1", votes > 0 ? "text-green-600" : votes < 0 ? "text-red-600" : "")}>
-            {votes}
+          <span className={cn(
+            "font-medium text-sm py-1", 
+            currentVotes > 0 ? "text-green-600" : currentVotes < 0 ? "text-red-600" : ""
+          )}>
+            {currentVotes}
           </span>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className={cn(
+              "h-8 w-8",
+              userVote === "down" && "text-red-600"
+            )}
+            onClick={(e) => handleVote("down", e)}
+          >
             <ArrowDown className="h-5 w-5" />
           </Button>
         </div>
@@ -97,6 +165,25 @@ const ThreadCard = ({
             <Eye className="h-4 w-4 mr-1" />
             <span>{viewCount}</span>
           </div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className={cn(
+              "h-8 px-2", 
+              bookmarked && "text-yellow-500"
+            )}
+            onClick={handleBookmark}
+          >
+            <Bookmark className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-8 px-2"
+            onClick={handleShare}
+          >
+            <Share2 className="h-4 w-4" />
+          </Button>
         </div>
       </CardFooter>
     </Card>
