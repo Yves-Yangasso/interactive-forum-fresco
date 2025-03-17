@@ -8,95 +8,36 @@ import CreatePost from "@/components/CreatePost";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageSquare, Users, TrendingUp, Sparkles } from "lucide-react";
-
-const threads = [
-  {
-    title: "Comment améliorer l'expérience utilisateur de votre application ?",
-    excerpt: "Je travaille sur une application et je cherche des conseils pour améliorer l'UX. Quelles sont vos meilleures pratiques ?",
-    author: { name: "Laura Dubois" },
-    category: "Design",
-    commentCount: 24,
-    viewCount: 142,
-    votes: 18,
-    time: "Il y a 2h",
-    isHot: true
-  },
-  {
-    title: "Les tendances technologiques à suivre en 2023",
-    excerpt: "Quelles sont les technologies qui vont émerger cette année ? J'aimerais avoir vos avis sur les domaines à surveiller.",
-    author: { name: "Thomas Martin" },
-    category: "Technologie",
-    commentCount: 13,
-    viewCount: 89,
-    votes: 7,
-    time: "Il y a 5h"
-  },
-  {
-    title: "Comment obtenir un premier emploi en développement web ?",
-    excerpt: "Je viens de terminer ma formation et je cherche des conseils pour décrocher mon premier poste de développeur web.",
-    author: { name: "Julie Leroux" },
-    category: "Carrière",
-    commentCount: 31,
-    viewCount: 214,
-    votes: 22,
-    time: "Il y a 1j"
-  },
-  {
-    title: "Débat : React vs Vue vs Angular",
-    excerpt: "Quel framework JavaScript préférez-vous et pourquoi ? J'hésite à me spécialiser et j'aimerais avoir vos retours d'expérience.",
-    author: { name: "Marc Dupont" },
-    category: "Développement",
-    commentCount: 47,
-    viewCount: 325,
-    votes: 15,
-    time: "Il y a 2j"
-  }
-];
-
-const comments = [
-  {
-    author: { 
-      name: "Sophie Legrand", 
-      role: "Modérateur" 
-    },
-    content: "L'UX est primordiale pour fidéliser vos utilisateurs. Je vous conseille de commencer par une analyse des points de friction dans votre parcours utilisateur actuel.",
-    time: "Il y a 1h",
-    votes: 12,
-    replies: [
-      {
-        author: { name: "Laura Dubois" },
-        content: "Merci Sophie ! Avez-vous des outils à recommander pour cette analyse ?",
-        time: "Il y a 45min",
-        votes: 3,
-        replies: [
-          {
-            author: { name: "Sophie Legrand", role: "Modérateur" },
-            content: "Bien sûr ! Hotjar est excellent pour les heatmaps et les enregistrements de session. UserTesting est également très utile pour des tests avec de vrais utilisateurs.",
-            time: "Il y a 30min",
-            votes: 5
-          }
-        ]
-      },
-      {
-        author: { name: "Paul Mercier" },
-        content: "Je confirme les recommandations de Sophie. J'ajouterais aussi Maze pour des tests rapides de prototypes.",
-        time: "Il y a 20min",
-        votes: 2
-      }
-    ]
-  },
-  {
-    author: { name: "Alexandre Petit" },
-    content: "N'oubliez pas l'accessibilité ! C'est souvent négligé mais c'est essentiel pour une bonne UX inclusive.",
-    time: "Il y a 1h30",
-    votes: 8,
-    replies: []
-  }
-];
+import { 
+  getRecentThreads, 
+  getTrendingThreadsWithInfo, 
+  getPopularThreadsWithInfo, 
+  getCurrentUserThreads,
+  getCommentsWithReplies,
+  ThreadWithAuthor,
+  CommentWithAuthor
+} from "@/utils/mockUtils";
+import { getThreadById } from "@/data/forumData";
 
 const Index = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activeThread, setActiveThread] = useState<number | null>(null);
+  const [activeThread, setActiveThread] = useState<string | null>(null);
+  
+  // Récupérer les données simulées
+  const recentThreads = getRecentThreads();
+  const trendingThreads = getTrendingThreadsWithInfo();
+  const popularThreads = getPopularThreadsWithInfo();
+  const followingThreads = getCurrentUserThreads();
+  
+  // Récupérer les commentaires du thread actif
+  const activeThreadComments: CommentWithAuthor[] = activeThread 
+    ? getCommentsWithReplies(activeThread)
+    : [];
+  
+  // Récupérer les détails du thread actif
+  const activeThreadDetails = activeThread 
+    ? recentThreads.find(thread => thread.id === activeThread) 
+    : null;
   
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -142,11 +83,11 @@ const Index = () => {
                   
                   <TabsContent value="recent" className="mt-6">
                     <div className="space-y-4">
-                      {threads.map((thread, index) => (
+                      {recentThreads.map((thread) => (
                         <ThreadCard
-                          key={index}
+                          key={thread.id}
                           {...thread}
-                          onClick={() => setActiveThread(index)}
+                          onClick={() => setActiveThread(thread.id)}
                         />
                       ))}
                     </div>
@@ -154,31 +95,37 @@ const Index = () => {
                   
                   <TabsContent value="trending" className="mt-6">
                     <div className="space-y-4">
-                      {/* Similaire à "recent" mais avec d'autres threads */}
-                      <ThreadCard
-                        {...threads[0]}
-                        onClick={() => setActiveThread(0)}
-                      />
+                      {trendingThreads.map((thread) => (
+                        <ThreadCard
+                          key={thread.id}
+                          {...thread}
+                          onClick={() => setActiveThread(thread.id)}
+                        />
+                      ))}
                     </div>
                   </TabsContent>
                   
                   <TabsContent value="popular" className="mt-6">
                     <div className="space-y-4">
-                      {/* Similaire à "recent" mais avec d'autres threads */}
-                      <ThreadCard
-                        {...threads[2]}
-                        onClick={() => setActiveThread(2)}
-                      />
+                      {popularThreads.map((thread) => (
+                        <ThreadCard
+                          key={thread.id}
+                          {...thread}
+                          onClick={() => setActiveThread(thread.id)}
+                        />
+                      ))}
                     </div>
                   </TabsContent>
                   
                   <TabsContent value="following" className="mt-6">
                     <div className="space-y-4">
-                      {/* Similaire à "recent" mais avec d'autres threads */}
-                      <ThreadCard
-                        {...threads[1]}
-                        onClick={() => setActiveThread(1)}
-                      />
+                      {followingThreads.map((thread) => (
+                        <ThreadCard
+                          key={thread.id}
+                          {...thread}
+                          onClick={() => setActiveThread(thread.id)}
+                        />
+                      ))}
                     </div>
                   </TabsContent>
                 </Tabs>
@@ -193,14 +140,16 @@ const Index = () => {
                   ← Retour aux discussions
                 </Button>
                 
-                <ThreadCard
-                  {...threads[activeThread]}
-                  onClick={() => {}}
-                />
+                {activeThreadDetails && (
+                  <ThreadCard
+                    {...activeThreadDetails}
+                    onClick={() => {}}
+                  />
+                )}
                 
                 <div className="my-6">
                   <h3 className="text-lg font-medium mb-4">
-                    Commentaires ({comments.length})
+                    Commentaires ({activeThreadComments.length})
                   </h3>
                   
                   <CreatePost 
@@ -210,8 +159,8 @@ const Index = () => {
                   />
                   
                   <div className="space-y-4">
-                    {comments.map((comment, index) => (
-                      <CommentThread key={index} {...comment} />
+                    {activeThreadComments.map((comment) => (
+                      <CommentThread key={comment.id} {...comment} />
                     ))}
                   </div>
                 </div>
